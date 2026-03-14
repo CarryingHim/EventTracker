@@ -94,7 +94,7 @@ class SetRoleIn(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────
 
 COOKIE = dict(key="token", httponly=True, samesite="lax",
-              secure=False, max_age=30*24*3600, path="/")
+              secure=settings.cookie_secure, max_age=30*24*3600, path="/")
 
 
 def user_out(u: User) -> dict:
@@ -234,7 +234,7 @@ async def lifespan(app: FastAPI):
                 password_hash=hash_pw(settings.admin_password),
                 role="admin",
                 security_question="What is the admin master key?",
-                security_answer_hash=hash_pw("changeme"),
+                security_answer_hash=hash_pw(settings.admin_security_answer),
             )
             db.add(admin)
             await db.commit()

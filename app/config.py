@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     jwt_expire_days: int = 30
     admin_username: str = "admin"
     admin_password: str = "admin123"
+    admin_security_answer: str = "changeme"
+    cookie_secure: bool = False
 
     @property
     def db_url(self) -> str:
