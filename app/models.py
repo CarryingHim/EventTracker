@@ -47,6 +47,7 @@ class EventTemplate(Base):
     description = Column(Text, default="")
     icon        = Column(String(10), default="🎲")   # emoji
     color       = Column(String(20), default="#6366f1")  # accent color
+    theme       = Column(String(20), default="default")  # visual theme: default, gothic, modern, etc.
     is_public   = Column(Boolean, default=True, nullable=False)
     custom_fields = Column(Text, default="[]")  # JSON array of field definitions
     creator_id  = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)

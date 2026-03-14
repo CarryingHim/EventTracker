@@ -58,6 +58,7 @@ class TemplateIn(BaseModel):
     description: str = ""
     icon: str = "🎲"
     color: str = "#6366f1"
+    theme: str = "default"  # e.g. default, gothic, modern, sci-fi
     is_public: bool = True
     custom_fields: list[CustomFieldDef] = []
 
@@ -111,7 +112,8 @@ def template_out(t: EventTemplate, fav_ids: set = None) -> dict:
     fav_ids = fav_ids or set()
     return {
         "id": t.id, "name": t.name, "description": t.description,
-        "icon": t.icon, "color": t.color, "is_public": t.is_public,
+        "icon": t.icon, "color": t.color, "theme": t.theme or "default",
+        "is_public": t.is_public,
         "custom_fields": json.loads(t.custom_fields or "[]"),
         "creator": t.creator.username if t.creator else "",
         "creator_id": t.creator_id,
@@ -126,7 +128,8 @@ def ev_out(ev: Event, uid: str) -> dict:
     tmpl = None
     if ev.template:
         tmpl = {"id": ev.template.id, "name": ev.template.name,
-                "icon": ev.template.icon, "color": ev.template.color}
+                "icon": ev.template.icon, "color": ev.template.color,
+                "theme": ev.template.theme or "default"}
     return {
         "id": ev.id, "title": ev.title, "location": ev.location,
         "description": ev.description or "", "date": ev.date, "time": ev.time,
@@ -173,7 +176,7 @@ BUILTIN_TEMPLATES = [
     {
         "name": "Blood on the Clocktower",
         "description": "Social deduction game for 5-20 players",
-        "icon": "🕰️", "color": "#7c3aed",
+        "icon": "🕰️", "color": "#7c3aed", "theme": "gothic",
         "custom_fields": [
             {"key": "script", "label": "Script", "type": "text", "required": False},
         ],
@@ -182,7 +185,7 @@ BUILTIN_TEMPLATES = [
     {
         "name": "Pen & Paper RPG",
         "description": "Tabletop role-playing session",
-        "icon": "🐉", "color": "#b45309",
+        "icon": "🐉", "color": "#b45309", "theme": "parchment",
         "custom_fields": [
             {"key": "system", "label": "System (e.g. D&D, Pathfinder)", "type": "text", "required": False},
             {"key": "campaign", "label": "Campaign / Adventure", "type": "text", "required": False},
@@ -191,7 +194,7 @@ BUILTIN_TEMPLATES = [
     {
         "name": "Board Game Night",
         "description": "Casual board game evening",
-        "icon": "♟️", "color": "#0891b2",
+        "icon": "♟️", "color": "#0891b2", "theme": "modern",
         "custom_fields": [
             {"key": "game", "label": "Game Title", "type": "text", "required": False},
         ],
@@ -199,7 +202,7 @@ BUILTIN_TEMPLATES = [
     {
         "name": "Quiz Night",
         "description": "Trivia and quiz competition",
-        "icon": "🧠", "color": "#059669",
+        "icon": "🧠", "color": "#059669", "theme": "default",
         "custom_fields": [
             {"key": "topic", "label": "Topic / Theme", "type": "text", "required": False},
             {"key": "teams", "label": "Max Teams", "type": "number", "required": False},
@@ -208,7 +211,7 @@ BUILTIN_TEMPLATES = [
     {
         "name": "LAN Party",
         "description": "Multiplayer gaming event",
-        "icon": "🎮", "color": "#dc2626",
+        "icon": "🎮", "color": "#dc2626", "theme": "sci-fi",
         "custom_fields": [
             {"key": "game", "label": "Main Game", "type": "text", "required": False},
             {"key": "bring_pc", "label": "Bring your own PC?", "type": "select",
@@ -256,6 +259,7 @@ async def lifespan(app: FastAPI):
                     description=t.get("description", ""),
                     icon=t.get("icon", "🎲"),
                     color=t.get("color", "#6366f1"),
+                    theme=t.get("theme", "default"),
                     is_public=True,
                     custom_fields=json.dumps(fields),
                     creator_id=admin.id,
@@ -411,6 +415,7 @@ async def create_template(body: TemplateIn, db: AsyncSession = Depends(get_db),
         description=body.description,
         icon=body.icon,
         color=body.color,
+        theme=body.theme,
         is_public=body.is_public,
         custom_fields=json.dumps([f.model_dump() for f in body.custom_fields]),
         creator_id=user.id,
@@ -436,7 +441,8 @@ async def update_template(tid: str, body: TemplateIn, db: AsyncSession = Depends
     if t.creator_id != user.id and not user.is_admin:
         raise HTTPException(403, "Not your template")
     t.name = body.name; t.description = body.description
-    t.icon = body.icon; t.color = body.color; t.is_public = body.is_public
+    t.icon = body.icon; t.color = body.color; t.theme = body.theme
+    t.is_public = body.is_public
     t.custom_fields = json.dumps([f.model_dump() for f in body.custom_fields])
     await db.commit(); await db.refresh(t)
     return template_out(t)

@@ -23,6 +23,56 @@
   --font-head: 'Syne', sans-serif;
   --font-body: 'DM Sans', sans-serif;
 }
+
+/* ── Themes ── */
+.theme-gothic {
+  --bg: #050508;
+  --surface: #0d0d12;
+  --surface2: #15151f;
+  --border: #331111;
+  --accent: #991b1b;
+  --accent2: #4c1d95;
+  --text: #e2e2e2;
+  --muted: #886666;
+  --font-head: 'Cinzel', serif;
+}
+.theme-parchment {
+  --bg: #f4ece1;
+  --surface: #fffaf0;
+  --surface2: #e8dfd0;
+  --border: #c4b49d;
+  --accent: #78350f;
+  --accent2: #1e3a8a;
+  --text: #2d241e;
+  --muted: #7d6e5d;
+  --font-head: 'Libre Baskerville', serif;
+}
+.theme-modern {
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --surface2: #f1f5f9;
+  --border: #e2e8f0;
+  --accent: #0f172a;
+  --accent2: #3b82f6;
+  --text: #0f172a;
+  --muted: #64748b;
+  --font-head: 'Inter', sans-serif;
+}
+.theme-sci-fi {
+  --bg: #020617;
+  --surface: #0f172a;
+  --surface2: #1e293b;
+  --border: #334155;
+  --accent: #38bdf8;
+  --accent2: #a855f7;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --font-head: 'Orbitron', sans-serif;
+}
+
+/* ── Fonts for Themes ── */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700;800&family=Orbitron:wght@400;700;900&display=swap');
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; }
 a { color: inherit; text-decoration: none; }
@@ -479,9 +529,21 @@ tr:last-child td { border-bottom: none; }
         <div class="form-group"><label>Icon (emoji)</label><input type="text" id="tmpl-icon" maxlength="4" value="🎲"></div>
       </div>
       <div class="form-group"><label>Description</label><textarea id="tmpl-desc" rows="2"></textarea></div>
-      <div class="form-group">
-        <label>Color</label>
-        <div class="color-row" id="color-row"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Theme</label>
+          <select id="tmpl-theme">
+            <option value="default">Default (Modern Dark)</option>
+            <option value="gothic">Gothic (Bloody/Dark)</option>
+            <option value="parchment">Parchment (Classic RPG)</option>
+            <option value="modern">Modern (Clean Light)</option>
+            <option value="sci-fi">Sci-Fi (Cyber/Neon)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Color</label>
+          <div class="color-row" id="color-row"></div>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <input type="checkbox" id="tmpl-public" checked>
@@ -693,8 +755,9 @@ async function loadTemplates() {
 
 function renderTemplateCard(t, clickFn) {
   const fav = t.is_favorite;
+  const themeClass = t.theme ? `theme-${t.theme}` : 'theme-default';
   return `
-  <div class="template-card" style="--card-color:${t.color}" onclick="${clickFn}('${t.id}')">
+  <div class="template-card ${themeClass}" style="--card-color:${t.color}" onclick="${clickFn}('${t.id}')">
     <div class="template-strip" style="background:${t.color}"></div>
     <span class="icon">${t.icon}</span>
     <h3>${esc(t.name)}</h3>
@@ -742,7 +805,7 @@ function renderTemplatesTab() {
   const container = document.getElementById('templates-grid');
   const myTemplates = currentUser.isAdmin ? allTemplates : allTemplates.filter(t => t.creator_id === currentUser.id);
   container.innerHTML = myTemplates.map(t => `
-    <div class="template-card" style="--card-color:${t.color}">
+    <div class="template-card theme-${t.theme || 'default'}" style="--card-color:${t.color}">
       <div class="template-strip" style="background:${t.color}"></div>
       <span class="icon">${t.icon}</span>
       <h3>${esc(t.name)}</h3>
@@ -775,6 +838,7 @@ function openTemplateModal(tid) {
   document.getElementById('tmpl-name').value = t?.name || '';
   document.getElementById('tmpl-icon').value = t?.icon || '🎲';
   document.getElementById('tmpl-desc').value = t?.description || '';
+  document.getElementById('tmpl-theme').value = t?.theme || 'default';
   document.getElementById('tmpl-public').checked = t ? t.is_public : true;
   selectedColor = t?.color || '#7c3aed';
   renderColorRow();
@@ -847,6 +911,7 @@ async function saveTemplate() {
     description: document.getElementById('tmpl-desc').value,
     icon: document.getElementById('tmpl-icon').value,
     color: selectedColor,
+    theme: document.getElementById('tmpl-theme').value,
     is_public: document.getElementById('tmpl-public').checked,
     custom_fields: fields,
   };
@@ -897,8 +962,9 @@ function renderEventCard(ev) {
   const full = count >= ev.maxPlayers;
   const isHost = ev.hostId === currentUser?.id;
   const tmplColor = ev.template?.color || 'var(--accent)';
+  const themeClass = ev.template?.theme ? `theme-${ev.template.theme}` : '';
   return `
-  <div class="event-card">
+  <div class="event-card ${themeClass}">
     <div class="event-card-main">
       <div class="event-date-box">
         <div class="day">${day}</div>
