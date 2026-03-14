@@ -2,9 +2,11 @@ version: "3.9"
 
 services:
   botc:
-    build: ./app
+    image: ghcr.io/carryinghim/eventtracker:latest
     container_name: botc
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     ports:
       - "8484:8000"
     environment:
