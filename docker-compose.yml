@@ -16,3 +16,16 @@ services:
       DATA_DIR: /data
     volumes:
       - ${DATA_PATH:-./data}:/data
+
+  whatsapp-bot:
+    image: ghcr.io/carryinghim/eventtracker-bot:latest
+    container_name: whatsapp-bot
+    restart: unless-stopped
+    depends_on:
+      - botc
+    environment:
+      - API_URL=http://botc:8000
+      - GROUP_JID=${WHATSAPP_GROUP_JID}
+      - PUBLIC_URL=${PUBLIC_URL}
+    volumes:
+      - ./bot/auth_info:/app/auth_info

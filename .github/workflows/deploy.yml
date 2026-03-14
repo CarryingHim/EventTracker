@@ -26,8 +26,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push App and Bot images
         run: |
           REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          # Build App
           docker build -t ghcr.io/${REPO_LOWER}:latest ./app
           docker push ghcr.io/${REPO_LOWER}:latest
+          # Build Bot
+          docker build -t ghcr.io/${REPO_LOWER}-bot:latest ./bot
+          docker push ghcr.io/${REPO_LOWER}-bot:latest

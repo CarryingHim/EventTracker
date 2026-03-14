@@ -516,6 +516,21 @@ async def list_events(db: AsyncSession = Depends(get_db), user: User = Depends(c
     return [ev_out(ev, user.id) for ev in r.scalars().all()]
 
 
+@app.get("/api/events/public")
+async def list_events_public(db: AsyncSession = Depends(get_db)):
+    r = await db.execute(
+        select(Event)
+        .options(
+            selectinload(Event.host),
+            selectinload(Event.template),
+            selectinload(Event.participants).selectinload(Participant.user)
+        )
+        .order_by(Event.date.asc(), Event.time.asc())
+    )
+    # We use a dummy ID 'public' for ev_out
+    return [ev_out(ev, "public") for ev in r.scalars().all()]
+
+
 @app.post("/api/events", status_code=201)
 async def create_event(body: EventIn, db: AsyncSession = Depends(get_db),
                        user: User = Depends(current_user)):

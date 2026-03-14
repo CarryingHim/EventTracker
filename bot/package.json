@@ -1,0 +1,13 @@
+{
+  "name": "botc-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp bot for BotC events",
+  "main": "index.js",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.6.0",
+    "qrcode-terminal": "^0.12.0",
+    "pino": "^8.19.0",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.5"
+  }
+}
