@@ -1,6 +1,9 @@
-# BotC Events — Deployment
+# EventTracker
+Tracks events for Whatsapp group
 
-## What's in the zip
+## BotC Events — Deployment
+
+### What's in the repo
 
 ```
 botc/
@@ -27,9 +30,9 @@ No Postgres, no extra containers.
 ## Deploy
 
 ```bash
-# 1. Unzip on your TrueNAS server
-unzip botc.zip -d /mnt/tank/apps/
-cd /mnt/tank/apps/botc
+# 1. Clone the repo
+git clone https://github.com/CarryingHim/EventTracker.git
+cd EventTracker
 
 # 2. Create your .env
 cp .env.example .env
@@ -84,9 +87,10 @@ cp /mnt/tank/apps/botc/data/botc.db /mnt/tank/backups/botc-$(date +%Y%m%d).db
 
 ## Updating
 
-Drop new files into `/mnt/tank/apps/botc`, then:
+Pull changes and rebuild:
 
 ```bash
+git pull origin main
 docker compose up -d --build
 ```
 
