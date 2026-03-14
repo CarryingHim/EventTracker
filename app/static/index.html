@@ -37,25 +37,25 @@
   --font-head: 'Cinzel', serif;
 }
 .theme-parchment {
-  --bg: #f4ece1;
-  --surface: #fffaf0;
-  --surface2: #e8dfd0;
-  --border: #c4b49d;
-  --accent: #78350f;
-  --accent2: #1e3a8a;
-  --text: #2d241e;
-  --muted: #7d6e5d;
+  --bg: #1a1612;
+  --surface: #241f1a;
+  --surface2: #2d2620;
+  --border: #4a3f35;
+  --accent: #d97706;
+  --accent2: #fbbf24;
+  --text: #e7d8c5;
+  --muted: #a3907d;
   --font-head: 'Libre Baskerville', serif;
 }
 .theme-modern {
-  --bg: #ffffff;
-  --surface: #f8fafc;
-  --surface2: #f1f5f9;
-  --border: #e2e8f0;
-  --accent: #0f172a;
-  --accent2: #3b82f6;
-  --text: #0f172a;
-  --muted: #64748b;
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface2: #334155;
+  --border: #475569;
+  --accent: #38bdf8;
+  --accent2: #818cf8;
+  --text: #f8fafc;
+  --muted: #94a3b8;
   --font-head: 'Inter', sans-serif;
 }
 .theme-sci-fi {
@@ -949,6 +949,17 @@ async function loadEvents() {
 
 function today() { return new Date().toISOString().split('T')[0]; }
 
+function addToCalendar(title, desc, location, date, time) {
+  const start = new Date(`${date}T${time}:00`).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const end = new Date(new Date(`${date}T${time}:00`).getTime() + 4 * 3600000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:${title}\nDESCRIPTION:${desc}\nLOCATION:${location}\nEND:VEVENT\nEND:VCALENDAR`;
+  const blob = new Blob([ics], { type: 'text/calendar' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${title.replace(/\s+/g, '_')}.ics`;
+  a.click();
+}
+
 function fmtDate(dateStr) {
   if (!dateStr) return {day:'?', month:'?'};
   const d = new Date(dateStr + 'T00:00:00');
@@ -958,11 +969,12 @@ function fmtDate(dateStr) {
 function renderEventCard(ev) {
   const { day, month } = fmtDate(ev.date);
   const count = ev.participants.length;
+  const waitCount = ev.waitlist.length;
   const pct = ev.maxPlayers > 0 ? Math.min(100, (count/ev.maxPlayers)*100) : 0;
   const full = count >= ev.maxPlayers;
   const isHost = ev.hostId === currentUser?.id;
-  const tmplColor = ev.template?.color || 'var(--accent)';
   const themeClass = ev.template?.theme ? `theme-${ev.template.theme}` : '';
+  
   return `
   <div class="event-card ${themeClass}">
     <div class="event-card-main">
@@ -970,35 +982,49 @@ function renderEventCard(ev) {
         <div class="day">${day}</div>
         <div class="month">${month}</div>
       </div>
-      <div class="event-info">
-        <h3>${esc(ev.title)}</h3>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+      <div class="event-info" style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <h3>${esc(ev.title)}</h3>
+          <button class="btn-icon" onclick="addToCalendar('${esc(ev.title)}','${esc(ev.description)}','${esc(ev.location)}','${ev.date}','${ev.time}')" title="Add to Calendar">📅</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;margin-top:4px">
           ${ev.template ? `<span class="badge" style="background:${ev.template.color}22;color:${ev.template.color}">${ev.template.icon} ${esc(ev.template.name)}</span>` : ''}
           ${isHost ? '<span class="badge badge-cyan">Your event</span>' : ''}
-          ${full ? '<span class="badge badge-red">Full</span>' : ''}
+          ${full ? '<span class="badge badge-yellow">Waitlist Open</span>' : ''}
         </div>
         <div class="event-meta">
           <span>📍 ${esc(ev.location)}</span>
           <span>⏰ ${ev.time}</span>
           <span>👤 ${esc(ev.host)}</span>
-          <span>👥 ${count}/${ev.maxPlayers}</span>
+          <span>👥 ${count}/${ev.maxPlayers}${waitCount ? ` (+${waitCount} wait)` : ''}</span>
         </div>
-        <div class="player-bar" style="width:160px;margin-top:8px"><div class="player-bar-fill" style="width:${pct}%;background:${pct>=100?'var(--danger)':pct>=70?'var(--warn)':'var(--success)'}"></div></div>
+        <div class="player-bar" style="width:160px;margin-top:8px"><div class="player-bar-fill" style="width:${pct}%;background:${pct>=100?'var(--warn)':pct>=70?'var(--warn)':'var(--success)'}"></div></div>
+        
+        <div style="margin-top:10px;font-size:0.8rem;color:var(--muted)">
+          <b>Joined:</b> ${ev.participants.join(', ') || 'None'}
+          ${ev.waitlist.length ? `<br><b>Waitlist:</b> <span style="color:var(--warn)">${ev.waitlist.join(', ')}</span>` : ''}
+        </div>
       </div>
       <div class="event-actions">
         ${ev.isJoined
           ? `<button class="btn btn-secondary btn-sm" onclick="leaveEvent('${ev.id}')">Leave</button>`
-          : `<button class="btn btn-primary btn-sm" ${full?'disabled':''} onclick="joinEvent('${ev.id}')">${full?'Full':'Join'}</button>`}
-        ${isHost || currentUser?.isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="openEditEvent('${ev.id}')">Edit</button>` : ''}
-        ${isHost || currentUser?.isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">Del</button>` : ''}
+          : `<button class="btn ${full?'btn-secondary':'btn-primary'} btn-sm" onclick="joinEvent('${ev.id}')">${full?'Join Waitlist':'Join'}</button>`}
+        ${isHost || currentUser?.isAdmin ? `<button class="btn-icon btn-sm" onclick="openEditEvent('${ev.id}')" title="Edit">✏️</button>` : ''}
+        ${isHost || currentUser?.isAdmin ? `<button class="btn-icon btn-sm" style="color:var(--danger)" onclick="deleteEvent('${ev.id}')" title="Delete">🗑️</button>` : ''}
       </div>
     </div>
     ${ev.beginner.enabled ? `
     <div style="padding:10px 16px;border-top:1px solid var(--border);background:rgba(245,158,11,0.05)">
-      <span style="font-size:0.78rem;color:var(--warn)">🌱 Beginner slot · ${ev.beginner.time} · ${ev.beginner.participants.length}/${ev.beginner.max} joined</span>
-      ${ev.beginner.isJoined
-        ? `<button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="leaveBeg('${ev.id}')">Leave</button>`
-        : `<button class="btn btn-secondary btn-sm" style="margin-left:8px" ${ev.beginner.participants.length>=ev.beginner.max?'disabled':''} onclick="joinBeg('${ev.id}')">Join</button>`}
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:0.78rem;color:var(--warn)">🌱 Beginner slot · ${ev.beginner.time} · ${ev.beginner.participants.length}/${ev.beginner.max} joined</span>
+        ${ev.beginner.isJoined
+          ? `<button class="btn btn-secondary btn-sm" onclick="leaveBeg('${ev.id}')">Leave</button>`
+          : `<button class="btn btn-secondary btn-sm" onclick="joinBeg('${ev.id}')">${ev.beginner.participants.length >= ev.beginner.max ? 'Join Waitlist' : 'Join'}</button>`}
+      </div>
+      <div style="margin-top:4px;font-size:0.75rem;color:var(--muted)">
+        <b>Joined:</b> ${ev.beginner.participants.join(', ') || 'None'}
+        ${ev.beginner.waitlist?.length ? ` · <b style="color:var(--warn)">Waitlist:</b> ${ev.beginner.waitlist.join(', ')}` : ''}
+      </div>
     </div>` : ''}
     ${ev.template && Object.keys(ev.custom_values||{}).length ? `
     <div style="padding:8px 16px;border-top:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap">

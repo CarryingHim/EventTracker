@@ -58,6 +58,14 @@ async def _migrate(conn):
             await conn.execute(text("ALTER TABLE events ADD COLUMN custom_values TEXT NOT NULL DEFAULT '{}'"))
             print("[migrate] events.custom_values added")
 
+    # ── 4. participants: add joined_at column ──────────────────
+    if "participants" in tables:
+        p_cols = {row[1] for row in (await conn.execute(text("PRAGMA table_info(participants)"))).fetchall()}
+        if "joined_at" not in p_cols:
+            # Note: We use CURRENT_TIMESTAMP for SQLite to fill existing rows
+            await conn.execute(text("ALTER TABLE participants ADD COLUMN joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"))
+            print("[migrate] participants.joined_at added")
+
     # ── 3. Create new tables if they don't exist yet ─────────────
     #    (create_all handles this, but we call it after alters so
     #     FK references to the new columns are already in place)

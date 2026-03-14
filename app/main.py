@@ -123,13 +123,23 @@ def template_out(t: EventTemplate, fav_ids: set = None) -> dict:
 
 
 def ev_out(ev: Event, uid: str) -> dict:
-    normal = [p for p in ev.participants if not p.is_beginner]
-    beg    = [p for p in ev.participants if p.is_beginner]
+    # Sort participants by joined_at to ensure waitlist is fair
+    all_p = sorted(ev.participants, key=lambda p: p.joined_at)
+    
+    normal_p = [p for p in all_p if not p.is_beginner]
+    normal_joined = normal_p[:ev.max_players]
+    normal_waitlist = normal_p[ev.max_players:]
+    
+    beg_p = [p for p in all_p if p.is_beginner]
+    beg_joined = beg_p[:ev.beginner_max]
+    beg_waitlist = beg_p[ev.beginner_max:]
+
     tmpl = None
     if ev.template:
         tmpl = {"id": ev.template.id, "name": ev.template.name,
                 "icon": ev.template.icon, "color": ev.template.color,
                 "theme": ev.template.theme or "default"}
+    
     return {
         "id": ev.id, "title": ev.title, "location": ev.location,
         "description": ev.description or "", "date": ev.date, "time": ev.time,
@@ -138,14 +148,16 @@ def ev_out(ev: Event, uid: str) -> dict:
         "createdAt": ev.created_at.isoformat(),
         "template": tmpl,
         "custom_values": json.loads(ev.custom_values or "{}"),
-        "participants": [p.user.username for p in normal],
-        "isJoined": any(p.user_id == uid for p in normal),
+        "participants": [p.user.username for p in normal_joined],
+        "waitlist": [p.user.username for p in normal_waitlist],
+        "isJoined": any(p.user_id == uid for p in normal_p),
         "beginner": {
             "enabled": ev.beginner_enabled,
             "time": ev.beginner_time or "",
             "max": ev.beginner_max or 0,
-            "participants": [p.user.username for p in beg],
-            "isJoined": any(p.user_id == uid for p in beg),
+            "participants": [p.user.username for p in beg_joined],
+            "waitlist": [p.user.username for p in beg_waitlist],
+            "isJoined": any(p.user_id == uid for p in beg_p),
         },
     }
 
@@ -558,11 +570,8 @@ async def delete_event(eid: str, db: AsyncSession = Depends(get_db),
 async def _join(eid: str, uid: str, is_beg: bool, db: AsyncSession):
     ev = await get_ev(eid, db)
     pool = [p for p in ev.participants if p.is_beginner == is_beg]
-    limit = ev.beginner_max if is_beg else ev.max_players
     if is_beg and not ev.beginner_enabled:
         raise HTTPException(400, "No beginner slot")
-    if len(pool) >= limit:
-        raise HTTPException(400, "Slot is full")
     if any(p.user_id == uid for p in pool):
         raise HTTPException(400, "Already joined")
     db.add(Participant(id=str(uuid.uuid4()), event_id=eid, user_id=uid, is_beginner=is_beg))

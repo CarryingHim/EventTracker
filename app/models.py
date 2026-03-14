@@ -87,6 +87,7 @@ class Participant(Base):
     event_id    = Column(String, ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
     user_id     = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     is_beginner = Column(Boolean, default=False, nullable=False)
+    joined_at   = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     event = relationship("Event", back_populates="participants")
     user  = relationship("User", back_populates="slots")
