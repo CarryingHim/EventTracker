@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  botc:
+    build: ./app
+    container_name: botc
+    restart: unless-stopped
+    ports:
+      - "8484:8000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      DATA_DIR: /data
+    volumes:
+      - ${DATA_PATH:-./data}:/data
