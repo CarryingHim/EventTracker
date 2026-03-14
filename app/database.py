@@ -40,8 +40,16 @@ async def _migrate(conn):
         await conn.execute(text("ALTER TABLE users ADD COLUMN security_answer_hash VARCHAR NOT NULL DEFAULT ''"))
         print("[migrate] users.security_answer_hash added")
 
-    # ── 2. events: add template + custom_values columns ─────────
-    if "users" in {row[0] for row in (await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))).fetchall()}:
+    # ── 2. event_templates: add theme column ──────────────────
+    tables = {row[0] for row in (await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))).fetchall()}
+    if "event_templates" in tables:
+        et_cols = {row[1] for row in (await conn.execute(text("PRAGMA table_info(event_templates)"))).fetchall()}
+        if "theme" not in et_cols:
+            await conn.execute(text("ALTER TABLE event_templates ADD COLUMN theme VARCHAR(20) NOT NULL DEFAULT 'default'"))
+            print("[migrate] event_templates.theme added")
+
+    # ── 3. events: add template + custom_values columns ─────────
+    if "events" in tables:
         ev_cols = {row[1] for row in (await conn.execute(text("PRAGMA table_info(events)"))).fetchall()}
         if "template_id" not in ev_cols:
             await conn.execute(text("ALTER TABLE events ADD COLUMN template_id VARCHAR REFERENCES event_templates(id) ON DELETE SET NULL"))
