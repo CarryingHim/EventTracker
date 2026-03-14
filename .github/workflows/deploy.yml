@@ -27,9 +27,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./app
-          push: true
-          # We force lowercase by using the github.repository_owner
-          tags: ghcr.io/${{ github.repository_owner }}/eventtracker:latest
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker build -t ghcr.io/${REPO_LOWER}:latest ./app
+          docker push ghcr.io/${REPO_LOWER}:latest
